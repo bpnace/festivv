@@ -98,4 +98,11 @@ If you encounter authentication issues:
 2. Make sure anonymous authentication is enabled in Supabase
 3. Check that the SQL in `simplified-security-fix.sql` has been executed successfully
 4. Run `node test-connection.js` to verify your connection is working
-5. Check the Supabase logs for any specific database errors 
+5. Check the Supabase logs for any specific database errors
+
+### SQL Troubleshooting
+
+When running the SQL script, you might encounter these issues:
+
+- **Error with `IF NOT EXISTS` in policy creation**: Some PostgreSQL versions don't support the `IF NOT EXISTS` clause for policies. If you see this error, simply remove these words from each CREATE POLICY statement.
+- **Permission errors with spatial_ref_sys**: This system table requires special handling. The script handles this by revoking direct access and creating a secure function instead. 
