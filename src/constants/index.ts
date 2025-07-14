@@ -11,11 +11,22 @@ export const APP_CONFIG = {
   TERMS_OF_SERVICE: 'https://festivv.app/terms',
 };
 
-// Fonts
+// System fonts by platform
+const SYSTEM_FONTS = {
+  heading: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  body: Platform.OS === 'ios' ? 'System' : 'Roboto',
+};
+
+// Fonts with fallbacks to system fonts
 export const FONTS = {
   heading: 'Mansfield',
   body: 'Neue Power',
   system: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  
+  // Use these when you want to ensure system fonts are used
+  // or when custom fonts might not be loaded yet
+  systemHeading: SYSTEM_FONTS.heading,
+  systemBody: SYSTEM_FONTS.body,
 };
 
 // Theme Colors - Modern and Colorful

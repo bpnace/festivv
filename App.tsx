@@ -38,10 +38,19 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const [fontsLoaded] = useFonts({
+  
+  // Try to load fonts, but don't block app if they fail
+  const [fontsLoaded, fontError] = useFonts({
     Mansfield: require('./assets/Mansfield.ttf'),
     'Neue Power': require('./assets/NeuePower.ttf'),
   });
+
+  // Log font loading error in development
+  useEffect(() => {
+    if (fontError && __DEV__) {
+      console.warn('Font loading error:', fontError);
+    }
+  }, [fontError]);
   
   // Simulate a small loading time to ensure all components are ready
   useEffect(() => {
@@ -52,7 +61,8 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
   
-  if (isLoading || !fontsLoaded) {
+  // Only wait for fonts in development to avoid blocking in production
+  if (isLoading || (__DEV__ && !fontsLoaded && !fontError)) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />

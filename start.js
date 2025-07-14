@@ -8,14 +8,17 @@
 
 const { spawn } = require('child_process');
 const { checkEnvironmentVariables } = require('./verify-supabase-config');
-const chalk = require('chalk') || { green: (text) => text, red: (text) => text, yellow: (text) => text };
 
-// Check if dotenv-cli is installed
+// Try to load chalk, but provide fallback if not available
+let chalk;
 try {
-  require.resolve('dotenv-cli');
+  chalk = require('chalk');
 } catch (e) {
-  console.error(chalk.red('❌ dotenv-cli is not installed. Please run: npm install -D dotenv-cli'));
-  process.exit(1);
+  chalk = {
+    green: (text) => text,
+    red: (text) => text,
+    yellow: (text) => text
+  };
 }
 
 console.log(chalk.green('🚀 Starting Festivv app...'));
@@ -31,11 +34,19 @@ if (!isConfigValid) {
   process.exit(1);
 }
 
-// Start Expo with dotenv
-console.log(chalk.green('\n✅ Environment variables verified. Starting Expo...'));
-
-const startCommand = 'npx';
-const args = ['dotenv', '-e', '.env.local', '--', 'expo', 'start'];
+// Check if we should use dotenv-cli or fall back to direct expo start
+let startCommand, args;
+try {
+  require.resolve('dotenv-cli');
+  console.log(chalk.green('\n✅ Environment variables verified. Starting Expo with dotenv-cli...'));
+  startCommand = 'npx';
+  args = ['dotenv', '-e', '.env.local', '--', 'expo', 'start'];
+} catch (e) {
+  console.log(chalk.yellow('\n⚠️ dotenv-cli not found, falling back to direct expo start...'));
+  console.log(chalk.yellow('   For better environment variable handling, run: npm install -D dotenv-cli'));
+  startCommand = 'npx';
+  args = ['expo', 'start'];
+}
 
 console.log(chalk.yellow(`\n$ ${startCommand} ${args.join(' ')}`));
 
