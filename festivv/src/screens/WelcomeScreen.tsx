@@ -1,8 +1,15 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView } from 'react-native';
-import { COLORS, SPACING, TEXT_SIZES, GERMAN_TEXTS } from '../constants';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { COLORS, SPACING, TEXT_SIZES, GERMAN_TEXTS, BORDER_RADIUS } from '../constants';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../types';
+
+type WelcomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Welcome'>;
 
 export default function WelcomeScreen() {
+  const navigation = useNavigation<WelcomeScreenNavigationProp>();
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -11,8 +18,15 @@ export default function WelcomeScreen() {
           {GERMAN_TEXTS.ONBOARDING.SUBTITLE}
         </Text>
         <Text style={styles.phase}>
-          Phase 0 Setup abgeschlossen! 🎉
+          Phase 1.2 Authentication in Bearbeitung! 🚀
         </Text>
+        
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => navigation.navigate('Auth')}
+        >
+          <Text style={styles.buttonText}>{GERMAN_TEXTS.ONBOARDING.GET_STARTED}</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -44,8 +58,20 @@ const styles = StyleSheet.create({
   },
   phase: {
     fontSize: TEXT_SIZES.base,
-    color: COLORS.success,
+    color: COLORS.festival,
     textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: SPACING.xxl,
+  },
+  button: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.base,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: BORDER_RADIUS.full,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: TEXT_SIZES.lg,
     fontWeight: '600',
   },
 }); 
