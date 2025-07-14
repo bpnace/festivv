@@ -2,6 +2,23 @@
 
 A React Native mobile application for festival attendees to capture, share, and manage photos.
 
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue.svg?logo=github)](https://github.com/bpnace/festivv)
+
+## Features
+
+- **Authentication**: Email/password login, registration, and guest access
+- **Group Management**: Create and join festival groups through invites or QR codes
+- **Photo Sharing**: Take and share photos with specific groups
+- **Gallery**: View and manage photos with filtering options
+- **Friend Finding**: Location-based friend finding at festivals
+- **Offline Support**: Take photos offline and sync later
+
+## Screenshots
+
+- Modern UI with purple/indigo color scheme
+- German language interface
+- Tab-based navigation with groups, gallery, camera, friends, and profile screens
+
 ## Setup
 
 ### Prerequisites
@@ -33,8 +50,12 @@ Where to find these keys:
 ### Installation
 
 1. Clone the repository
-2. Install dependencies:
+```bash
+git clone https://github.com/bpnace/festivv.git
+cd festivv
+```
 
+2. Install dependencies:
 ```bash
 npm install
 # or
@@ -60,6 +81,22 @@ To test your Supabase connection:
 ```bash
 node test-connection.js
 ```
+
+## App Structure
+
+### Screens
+- **StartScreen**: Landing page with app overview and login options
+- **AuthScreen**: Login, registration, and guest access
+- **GroupsScreen**: List of festival groups with creation and joining options
+- **GalleryScreen**: Photo grid with filtering options and upload functionality
+- **FriendsScreen**: Find and manage festival friends with location features
+- **ProfileScreen**: User profile, settings, and account management
+
+### Main Components
+- **Navigation**: Tab-based navigation with stack navigation for authentication flow
+- **Authentication**: Supabase authentication with guest access
+- **UI Components**: Modern design with consistent styling across screens
+- **Database Integration**: Secure data storage and retrieval with Row Level Security
 
 ## Supabase Configuration
 
@@ -105,4 +142,12 @@ If you encounter authentication issues:
 When running the SQL script, you might encounter these issues:
 
 - **Error with `IF NOT EXISTS` in policy creation**: Some PostgreSQL versions don't support the `IF NOT EXISTS` clause for policies. If you see this error, simply remove these words from each CREATE POLICY statement.
-- **Permission errors with spatial_ref_sys**: This system table requires special handling. The script handles this by revoking direct access and creating a secure function instead. 
+- **Permission errors with spatial_ref_sys**: This system table requires special handling. The script handles this by revoking direct access and creating a secure function instead.
+
+## GitHub Repository
+
+The source code is available on GitHub: [https://github.com/bpnace/festivv](https://github.com/bpnace/festivv)
+
+## License
+
+MIT 

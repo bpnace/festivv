@@ -6,17 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { View, ActivityIndicator } from 'react-native';
 
 // Screens
+import StartScreen from '../screens/StartScreen';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import AuthScreen from '../screens/AuthScreen';
-
-// Temporary placeholder screens
-const GroupsScreen = () => <View style={{ flex: 1 }} />;
-const GalleryScreen = () => <View style={{ flex: 1 }} />;
-const CameraScreen = () => <View style={{ flex: 1 }} />;
-const FriendsScreen = () => <View style={{ flex: 1 }} />;
-const ProfileScreen = () => <View style={{ flex: 1 }} />;
-const SettingsScreen = () => <View style={{ flex: 1 }} />;
-const PremiumScreen = () => <View style={{ flex: 1 }} />;
+import GroupsScreen from '../screens/GroupsScreen';
+import GalleryScreen from '../screens/GalleryScreen';
+import FriendsScreen from '../screens/FriendsScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 
 // Types
 import { RootStackParamList, TabParamList } from '../types';
@@ -26,6 +22,13 @@ import { COLORS } from '../constants';
 // Create navigators
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
+
+// Camera screen component
+const CameraScreen = () => (
+  <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' }}>
+    <Ionicons name="camera" size={100} color={COLORS.primary} />
+  </View>
+);
 
 // Main tab navigator (when authenticated)
 const MainTabs = () => {
@@ -52,6 +55,13 @@ const MainTabs = () => {
         },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textSecondary,
+        tabBarStyle: {
+          borderTopWidth: 1,
+          borderTopColor: COLORS.border,
+          height: 60,
+          paddingBottom: 10,
+          paddingTop: 5,
+        },
       })}
     >
       <Tab.Screen name="Groups" component={GroupsScreen} options={{ title: 'Gruppen' }} />
@@ -69,7 +79,7 @@ export default function Navigation() {
   // Show loading screen while checking authentication
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
@@ -84,18 +94,19 @@ export default function Navigation() {
             <Stack.Screen name="Home" component={MainTabs} />
             <Stack.Screen 
               name="Settings" 
-              component={SettingsScreen} 
+              component={ProfileScreen} 
               options={{ headerShown: true, title: 'Einstellungen' }}
             />
             <Stack.Screen 
               name="Premium" 
-              component={PremiumScreen} 
+              component={ProfileScreen} 
               options={{ headerShown: true, title: 'Premium' }}
             />
           </>
         ) : (
           // Unauthenticated routes
           <>
+            <Stack.Screen name="Start" component={StartScreen} />
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="Auth" component={AuthScreen} />
           </>
