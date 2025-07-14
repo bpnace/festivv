@@ -1,16 +1,16 @@
-// Load environment variables from .env.local
-require('dotenv/config');
+// Load environment variables from .env
+require('dotenv').config();
 
 // Get environment variables
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
+const EXPO_PUBLIC_SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+const EXPO_PUBLIC_SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
 
 // Log environment variables for debugging (only in development)
 if (process.env.APP_ENV === 'development' || process.env.DEBUG_MODE === 'true') {
   console.log('Environment variables loaded in app.config.js:');
-  console.log('SUPABASE_URL:', SUPABASE_URL ? 'Found' : 'Not found');
-  console.log('SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? 'Found' : 'Not found');
+  console.log('EXPO_PUBLIC_SUPABASE_URL:', EXPO_PUBLIC_SUPABASE_URL ? 'Found' : 'Not found');
+  console.log('EXPO_PUBLIC_SUPABASE_ANON_KEY:', EXPO_PUBLIC_SUPABASE_ANON_KEY ? 'Found' : 'Not found');
   console.log('SUPABASE_SERVICE_KEY:', SUPABASE_SERVICE_KEY ? 'Found' : 'Not found');
 }
 
@@ -45,8 +45,8 @@ module.exports = {
   },
   extra: {
     // Pass environment variables to the app
-    supabaseUrl: SUPABASE_URL,
-    supabaseAnonKey: SUPABASE_ANON_KEY,
+    supabaseUrl: EXPO_PUBLIC_SUPABASE_URL,
+    supabaseAnonKey: EXPO_PUBLIC_SUPABASE_ANON_KEY,
     supabaseServiceKey: SUPABASE_SERVICE_KEY,
     
     // App configuration
