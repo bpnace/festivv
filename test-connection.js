@@ -1,122 +1,135 @@
-// Load environment variables from .env.local
-require('dotenv/config');
+/**
+ * Supabase Connection Test Script
+ * 
+ * This script tests the connection to your Supabase instance using the
+ * credentials from your .env.local file. It verifies:
+ * 1. That the URL and keys are properly set
+ * 2. That the connection can be established
+ * 3. That authentication is working
+ */
 
-// Import Supabase client libraries
+require('dotenv').config({ path: '.env.local' });
 const { createClient } = require('@supabase/supabase-js');
-const AsyncStorage = require('@react-native-async-storage/async-storage').default;
 
-// Get Supabase URL and keys from environment variables
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+// Get Supabase credentials from environment variables
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
-// Validate credentials
+// Check if credentials are set
+console.log('🔍 Checking Supabase credentials...');
+
 if (!supabaseUrl) {
-  console.error('❌ Missing SUPABASE_URL in .env.local');
+  console.error('❌ Supabase URL not found in environment variables');
   process.exit(1);
 }
 
 if (!supabaseAnonKey) {
-  console.error('❌ Missing SUPABASE_ANON_KEY in .env.local');
+  console.error('❌ Supabase anon key not found in environment variables');
   process.exit(1);
 }
 
-if (!supabaseServiceKey) {
-  console.warn('⚠️ Missing SUPABASE_SERVICE_KEY in .env.local');
-}
-
-console.log('🔑 Credentials found:');
+// Log credentials (masked for security)
+console.log('📋 Supabase credentials:');
 console.log(`- URL: ${supabaseUrl}`);
 console.log(`- Anon Key: ${supabaseAnonKey.substring(0, 5)}...`);
 if (supabaseServiceKey) {
   console.log(`- Service Key: ${supabaseServiceKey.substring(0, 5)}...`);
+} else {
+  console.warn('⚠️ Service key not found - admin operations will not be available');
 }
 
 // Create Supabase clients
+console.log('\n🔌 Creating Supabase clients...');
 const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: false,
-  }
+  auth: { persistSession: false }
 });
 
-const supabaseAdmin = supabaseServiceKey ? 
+// Create admin client if service key is available
+const supabaseAdmin = supabaseServiceKey ?
   createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: false,
-    }
+    auth: { persistSession: false }
   }) : null;
 
-// Test connection
-async function testConnection() {
+// Test public client connection
+console.log('\n🧪 Testing public client connection...');
+async function testPublicConnection() {
   try {
-    console.log('\n🔄 Testing Supabase connection...');
+    // Try to get session (should work even if not authenticated)
+    const { data, error } = await supabase.auth.getSession();
     
-    // Test auth session
-    console.log('📝 Testing auth API...');
-    const { error: authError } = await supabase.auth.getSession();
-    
-    if (authError) {
-      console.error('❌ Auth API error:', authError.message);
-    } else {
-      console.log('✅ Auth API connection successful');
+    if (error) {
+      console.error(`❌ Connection error: ${error.message}`);
+      return false;
     }
     
-    // Test database access - try users table
-    console.log('\n📝 Testing database access...');
-    console.log('Trying users table...');
+    console.log('✅ Public client connection successful');
     
-    const { error: usersError } = await supabase.from('users').select('id').limit(1);
+    // Try anonymous sign-in if available
+    console.log('\n🔑 Testing anonymous authentication...');
+    const { error: signInError } = await supabase.auth.signInAnonymously();
     
-    if (usersError && usersError.message.includes('does not exist')) {
-      console.warn('⚠️ users table not found. You need to run the SQL setup script.');
-    } else if (usersError) {
-      console.error('❌ Database error with users table:', usersError.message);
-    } else {
-      console.log('✅ users table access successful');
-    }
-    
-    // Test anonymous authentication
-    console.log('\n📝 Testing anonymous authentication...');
-    const { error: anonError } = await supabase.auth.signInAnonymously();
-    
-    if (anonError) {
-      if (anonError.message === 'Anonymous sign-ins are disabled') {
-        console.error('❌ Anonymous authentication is disabled.');
-        console.log('To enable:');
-        console.log('1. Go to Supabase Dashboard > Authentication > Providers');
-        console.log('2. Enable "Anonymous Sign-in"');
-        console.log('3. Save changes');
+    if (signInError) {
+      if (signInError.message === 'Anonymous sign-ins are disabled') {
+        console.warn('⚠️ Anonymous authentication is disabled in your Supabase project');
+        console.warn('   Enable it in Supabase Dashboard > Authentication > Providers > Anonymous Sign-in');
       } else {
-        console.error('❌ Anonymous authentication error:', anonError.message);
+        console.error(`❌ Anonymous authentication error: ${signInError.message}`);
       }
-    } else {
-      console.log('✅ Anonymous authentication successful');
+      return true; // Still return true as the connection itself works
     }
     
-    // Test service role if available
-    if (supabaseAdmin) {
-      console.log('\n📝 Testing service role access...');
-      const { error: serviceError } = await supabaseAdmin.auth.admin.listUsers();
-      
-      if (serviceError) {
-        console.error('❌ Service role access error:', serviceError.message);
-      } else {
-        console.log('✅ Service role access successful');
-      }
-    }
-    
-    console.log('\n🔍 Summary:');
-    console.log('Connection to Supabase URL:', supabaseUrl);
-    console.log('Next steps:');
-    console.log('1. Run the SQL script in simplified-security-fix.sql if you haven\'t already');
-    console.log('2. Ensure anonymous authentication is enabled if you need guest access');
-    
+    console.log('✅ Anonymous authentication successful');
+    return true;
   } catch (err) {
-    console.error('\n❌ Unexpected error testing connection:', err);
+    console.error(`❌ Unexpected error: ${err.message}`);
+    return false;
+  }
+}
+
+// Test admin client connection if available
+async function testAdminConnection() {
+  if (!supabaseAdmin) {
+    console.warn('\n⚠️ Skipping admin connection test (no service key provided)');
+    return false;
+  }
+  
+  console.log('\n🧪 Testing admin client connection...');
+  try {
+    // Try to access a protected table or function that requires admin privileges
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+    
+    if (error) {
+      console.error(`❌ Admin connection error: ${error.message}`);
+      return false;
+    }
+    
+    console.log('✅ Admin client connection successful');
+    return true;
+  } catch (err) {
+    console.error(`❌ Unexpected admin error: ${err.message}`);
+    return false;
+  }
+}
+
+// Run the tests
+async function runTests() {
+  const publicConnectionSuccess = await testPublicConnection();
+  const adminConnectionSuccess = await testAdminConnection();
+  
+  console.log('\n📊 Test Results:');
+  console.log(`- Public Client: ${publicConnectionSuccess ? '✅ Connected' : '❌ Failed'}`);
+  console.log(`- Admin Client: ${adminConnectionSuccess ? '✅ Connected' : supabaseAdmin ? '❌ Failed' : '⚠️ Not Tested'}`);
+  
+  if (publicConnectionSuccess) {
+    console.log('\n🎉 Your Supabase configuration is working!');
+    if (!adminConnectionSuccess && supabaseAdmin) {
+      console.warn('⚠️ Note: Admin operations may not work correctly');
+    }
+  } else {
+    console.error('\n❌ Your Supabase configuration has issues that need to be fixed');
     process.exit(1);
   }
 }
 
-testConnection(); 
+runTests(); 

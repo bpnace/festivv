@@ -1,5 +1,11 @@
 // Load environment variables from .env
-require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
+
+// Log environment variables loading
+console.log('env: load .env.local');
+
+// Export environment variables that should be available to the Expo client
+console.log('env: export EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_ANON_KEY');
 
 // Get environment variables
 const EXPO_PUBLIC_SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || '';

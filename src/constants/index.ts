@@ -11,6 +11,13 @@ export const APP_CONFIG = {
   TERMS_OF_SERVICE: 'https://festivv.app/terms',
 };
 
+// Fonts
+export const FONTS = {
+  heading: 'Mansfield',
+  body: 'Neue Power',
+  system: Platform.OS === 'ios' ? 'System' : 'Roboto',
+};
+
 // Theme Colors - Modern and Colorful
 export const COLORS = {
   // Primary Colors

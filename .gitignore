@@ -1,3 +1,21 @@
 node_modules/
-.DS_Store
 .expo/
+.env
+.env.local
+.env.development
+.env.production
+npm-debug.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+dist/
+
+# macOS
+.DS_Store
+
+# Temporary files created by Metro
+.metro-health-check*

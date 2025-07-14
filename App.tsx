@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useState, useEffect } from 'react';
+import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
@@ -37,6 +38,10 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const [fontsLoaded] = useFonts({
+    Mansfield: require('./assets/Mansfield.ttf'),
+    'Neue Power': require('./assets/NeuePower.ttf'),
+  });
   
   // Simulate a small loading time to ensure all components are ready
   useEffect(() => {
@@ -47,7 +52,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
   
-  if (isLoading) {
+  if (isLoading || !fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />

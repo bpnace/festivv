@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
-import { COLORS, SPACING, TEXT_SIZES, GERMAN_TEXTS, BORDER_RADIUS } from '../constants';
+import { COLORS, SPACING, TEXT_SIZES, GERMAN_TEXTS, BORDER_RADIUS, FONTS } from '../constants';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
@@ -42,16 +42,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.lg,
+    paddingBottom: 34,
   },
   title: {
     fontSize: TEXT_SIZES.display,
     fontWeight: 'bold',
+    fontFamily: FONTS.heading,
     color: COLORS.primary,
     marginBottom: SPACING.base,
     textAlign: 'center',
   },
   subtitle: {
     fontSize: TEXT_SIZES.lg,
+    fontFamily: FONTS.body,
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.xl,
@@ -61,6 +64,7 @@ const styles = StyleSheet.create({
     color: COLORS.festival,
     textAlign: 'center',
     fontWeight: '600',
+    fontFamily: FONTS.body,
     marginBottom: SPACING.xxl,
   },
   button: {
@@ -73,5 +77,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: TEXT_SIZES.lg,
     fontWeight: '600',
+    fontFamily: FONTS.heading,
   },
 }); 

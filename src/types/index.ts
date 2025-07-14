@@ -20,7 +20,7 @@ export type RootStackParamList = {
 };
 
 export type TabParamList = {
-  Groups: undefined;
+  Start: undefined;
   Gallery: undefined;
   Camera: undefined;
   Friends: undefined;
