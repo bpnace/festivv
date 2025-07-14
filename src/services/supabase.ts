@@ -27,10 +27,6 @@ if (__DEV__) {
     console.error('Supabase anon key not found in environment variables');
   }
   
-  if (!supabaseServiceKey) {
-    console.error('Supabase service key not found in environment variables');
-  }
-  
   console.log('Supabase configuration:');
   console.log(`- URL: ${supabaseUrl ? 'Found ✅' : 'Missing ❌'}`);
   console.log(`- Anon Key: ${supabaseAnonKey ? 'Found ✅' : 'Missing ❌'}`);
@@ -51,18 +47,19 @@ export const supabase = createClient(
   }
 );
 
-// Create admin client with service role for admin operations
+// Create admin client with service role for admin operations only if service key is available
 // Never expose this to the client side! Only use in secure contexts!
-export const supabaseAdmin = createClient(
-  supabaseUrl,
-  supabaseServiceKey,
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: false,
-    },
-  }
-);
+export const supabaseAdmin = supabaseServiceKey ? 
+  createClient(
+    supabaseUrl,
+    supabaseServiceKey,
+    {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: false,
+      },
+    }
+  ) : null;
 
 // Helper function to check if Supabase is properly configured
 export const testSupabaseConnection = async (): Promise<{
@@ -166,16 +163,17 @@ export const testSupabaseConnection = async (): Promise<{
   }
 };
 
-// Test connection in development mode
+// Test connection in development mode with timeout and error handling
 if (__DEV__) {
+  // Delay the connection test to avoid blocking app startup
   setTimeout(() => {
     testSupabaseConnection()
       .then(result => {
         if (!result.success) {
           console.warn('⚠️ Supabase connection test failed:', result.message);
           
-          // Show alert in development mode
-          if (Platform.OS !== 'web') {
+          // Only show alert if this isn't a network error (which is common during development)
+          if (!result.message.includes('Network request failed') && Platform.OS !== 'web') {
             Alert.alert(
               'Supabase Connection Error',
               result.message,
@@ -189,5 +187,5 @@ if (__DEV__) {
       .catch(err => {
         console.error('Failed to test Supabase connection:', err);
       });
-  }, 1000);
+  }, 2000); // Increased timeout to give the app more time to start up
 } 

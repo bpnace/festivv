@@ -38,17 +38,22 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const [fontLoadingFailed, setFontLoadingFailed] = useState(false);
   
   // Try to load fonts, but don't block app if they fail
+  // We use a try-catch block to handle any font loading errors
   const [fontsLoaded, fontError] = useFonts({
     Mansfield: require('./assets/Mansfield.ttf'),
     'Neue Power': require('./assets/NeuePower.ttf'),
   });
 
-  // Log font loading error in development
+  // Log font loading error in development and set state
   useEffect(() => {
-    if (fontError && __DEV__) {
-      console.warn('Font loading error:', fontError);
+    if (fontError) {
+      if (__DEV__) {
+        console.warn('Font loading error:', fontError);
+      }
+      setFontLoadingFailed(true);
     }
   }, [fontError]);
   
@@ -61,8 +66,21 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
   
-  // Only wait for fonts in development to avoid blocking in production
-  if (isLoading || (__DEV__ && !fontsLoaded && !fontError)) {
+  // Only wait for fonts for a maximum of 1 second to avoid blocking app startup
+  useEffect(() => {
+    const fontTimeout = setTimeout(() => {
+      if (!fontsLoaded && !fontLoadingFailed) {
+        console.warn('Font loading timed out, continuing without custom fonts');
+        setFontLoadingFailed(true);
+      }
+    }, 1000);
+    
+    return () => clearTimeout(fontTimeout);
+  }, [fontsLoaded, fontLoadingFailed]);
+  
+  // Show loading screen only if we're still in initial loading state
+  // and fonts haven't failed or timed out
+  if (isLoading && !fontLoadingFailed) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
