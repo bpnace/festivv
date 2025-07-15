@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as MediaLibrary from 'expo-media-library';
 import * as FileSystem from 'expo-file-system';
-import { COLORS, SPACING, BORDER_RADIUS, GERMAN_TEXTS } from '../constants';
+import { COLORS, SPACING, BORDER_RADIUS, GERMAN_TEXTS, TEXT_SIZES } from '../constants';
 
 const { width, height } = Dimensions.get('window');
 
@@ -38,6 +38,7 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const currentPhoto = photos[currentIndex];
@@ -49,6 +50,7 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
     
     if (newIndex !== currentIndex && newIndex >= 0 && newIndex < photos.length) {
       setCurrentIndex(newIndex);
+      setImageError(false); // Reset error state when changing photos
     }
   };
 
@@ -115,6 +117,7 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
     if (currentIndex < photos.length - 1) {
       const nextIndex = currentIndex + 1;
       setCurrentIndex(nextIndex);
+      setImageError(false); // Reset error state
       scrollViewRef.current?.scrollTo({ x: nextIndex * width, animated: true });
     }
   };
@@ -124,8 +127,15 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
     if (currentIndex > 0) {
       const prevIndex = currentIndex - 1;
       setCurrentIndex(prevIndex);
+      setImageError(false); // Reset error state
       scrollViewRef.current?.scrollTo({ x: prevIndex * width, animated: true });
     }
+  };
+
+  // Handle image load error
+  const handleImageError = () => {
+    console.log('Image failed to load:', currentPhoto.uri);
+    setImageError(true);
   };
 
   return (
@@ -146,11 +156,19 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
         >
           {photos.map((photo) => (
             <View key={photo.id} style={styles.photoContainer}>
-              <Image
-                source={{ uri: photo.uri }}
-                style={styles.photo}
-                resizeMode="contain"
-              />
+              {imageError && photo.id === currentPhoto.id ? (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="image-outline" size={80} color={COLORS.textTertiary} />
+                  <Text style={styles.errorText}>Bild konnte nicht geladen werden</Text>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: photo.uri }}
+                  style={styles.photo}
+                  resizeMode="contain"
+                  onError={handleImageError}
+                />
+              )}
             </View>
           ))}
         </ScrollView>
@@ -248,6 +266,16 @@ const styles = StyleSheet.create({
   photo: {
     width: '100%',
     height: '100%',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: COLORS.textTertiary,
+    marginTop: SPACING.base,
+    fontSize: TEXT_SIZES.base,
   },
   header: {
     position: 'absolute',

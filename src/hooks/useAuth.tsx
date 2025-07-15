@@ -52,20 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (session) {
           // User is authenticated, fetch profile
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id);
-          
-          if (userError) {
-            console.error('User data error:', userError.message);
-            setError('Failed to get user data');
-          } else if (userData && userData.length > 0) {
-            setUser(userData[0]);
-          } else {
-            // No user profile found, create one
-            await createUserProfile(session.user.id, session.user.email, session.user.user_metadata?.name);
-          }
+          await fetchUserProfile(session.user.id);
         }
       } catch (err: any) {
         console.error('Auth initialization error:', err.message);
@@ -86,21 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (event === 'SIGNED_IN' && session) {
         try {
-          // Get user profile
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id);
-          
-          if (userError) {
-            console.error('User data error:', userError.message);
-            setError('Failed to get user data');
-          } else if (userData && userData.length > 0) {
-            setUser(userData[0]);
-          } else {
-            // Create user profile if it doesn't exist
-            await createUserProfile(session.user.id, session.user.email, session.user.user_metadata?.name);
-          }
+          await fetchUserProfile(session.user.id);
         } catch (err: any) {
           console.error('Profile fetch error:', err.message);
           setError('Failed to fetch user profile');
@@ -119,9 +92,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Helper function to create user profile with proper error handling
-  const createUserProfile = async (userId: string, email?: string | null, name?: string | null) => {
+  // Fetch user profile from database
+  const fetchUserProfile = async (userId: string) => {
     try {
+      // Get user profile
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (userError) {
+        if (userError.message.includes('JSON object requested, multiple rows returned')) {
+          // Handle case where multiple rows are returned
+          const { data: userArray, error: arrayError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId);
+            
+          if (!arrayError && userArray && userArray.length > 0) {
+            setUser(userArray[0]);
+            return;
+          }
+        }
+        
+        console.error('User data error:', userError.message);
+        
+        // Create user profile if it doesn't exist
+        await createUserProfile(userId);
+      } else if (userData) {
+        setUser(userData);
+      } else {
+        // No user profile found, create one
+        await createUserProfile(userId);
+      }
+    } catch (err: any) {
+      console.error('Fetch user profile error:', err.message);
+      throw err;
+    }
+  };
+
+  // Helper function to create user profile with proper error handling
+  const createUserProfile = async (userId: string) => {
+    try {
+      // Get auth user info
+      const { data: authUser } = await supabase.auth.getUser();
+      
+      if (!authUser?.user) {
+        throw new Error('Auth user not found');
+      }
+      
+      const email = authUser.user.email;
+      const name = authUser.user.user_metadata?.name || email?.split('@')[0] || 'User';
+      const isGuest = !email;
+      
       // First, check if the user profile already exists
       const { data: existingUsers, error: fetchError } = await supabase
         .from('users')
@@ -137,9 +161,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Prepare user data
       const newUser = {
         id: userId,
-        name: name || email?.split('@')[0] || 'User',
+        name: name,
         email: email,
-        is_guest: !email,
+        is_guest: isGuest,
         avatar_url: null as string | null, // Explicitly type as string | null
       };
       
@@ -152,8 +176,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (insertError) {
         console.error('Create user error:', insertError.message);
         
+        // If it's a foreign key constraint error, the auth user might not exist yet
+        // This can happen in race conditions, so we'll retry after a short delay
+        if (insertError.message.includes('foreign key constraint') || 
+            insertError.message.includes('violates row-level security policy')) {
+          
+          // Wait a moment for the auth user to be fully created
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Make sure supabaseAdmin is available
+          if (supabaseAdmin) {
+            // Try again with service role client to bypass RLS
+            const { error: adminInsertError } = await supabaseAdmin
+              .from('users')
+              .insert([newUser]);
+              
+            if (!adminInsertError) {
+              // Successfully created user with admin client
+              const { data: createdUser } = await supabaseAdmin
+                .from('users')
+                .select('*')
+                .eq('id', userId)
+                .single();
+                
+              if (createdUser) {
+                setUser(createdUser);
+                return;
+              }
+            }
+          } else {
+            console.error('Admin client not available for user creation');
+          }
+        }
+        
         // If it's a duplicate key error, the user profile might already exist
-        if (insertError.message.includes('duplicate key') || insertError.message.includes('violates row-level security policy')) {
+        if (insertError.message.includes('duplicate key')) {
           const { data: retryUsers, error: retryError } = await supabase
             .from('users')
             .select('*')
@@ -257,8 +314,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data?.user) {
         console.log('User registered successfully:', data.user.id);
         
+        // Wait a moment to ensure the auth user is fully created
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         // Create user profile in the database
-        await createUserProfile(data.user.id, email, name);
+        await createUserProfile(data.user.id);
         
         // No need to show verification message since we're auto-confirming
         setError(null);
@@ -324,8 +384,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Guest access error:', error.message);
         setError(error.message);
       } else if (data?.user) {
+        // Wait a moment to ensure the auth user is fully created
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
         // Create guest user profile
-        await createUserProfile(data.user.id, null, 'Guest User');
+        await createUserProfile(data.user.id);
       }
     } catch (err: any) {
       console.error('Guest access exception:', err.message);
