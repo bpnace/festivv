@@ -46,7 +46,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 // Create admin client if service key is available
-const supabaseAdmin = supabaseServiceKey ?
+const supabaseAdmin = supabaseServiceKey ? 
   createClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false }
   }) : null;
@@ -79,14 +79,14 @@ async function testPublicConnection() {
       return true; // Still return true as the connection itself works
     }
     
-    console.log('✅ Anonymous authentication successful');
+      console.log('✅ Anonymous authentication successful');
     return true;
   } catch (err) {
     console.error(`❌ Unexpected error: ${err.message}`);
     return false;
   }
 }
-
+    
 // Test admin client connection if available
 async function testAdminConnection() {
   if (!supabaseAdmin) {
@@ -98,7 +98,7 @@ async function testAdminConnection() {
   try {
     // Try to access a protected table or function that requires admin privileges
     const { data, error } = await supabaseAdmin.auth.admin.listUsers();
-    
+      
     if (error) {
       console.error(`❌ Admin connection error: ${error.message}`);
       return false;

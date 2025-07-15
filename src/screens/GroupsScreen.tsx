@@ -11,6 +11,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, TEXT_SIZES, BORDER_RADIUS } from '../constants';
+import ScreenHeader from '../components/ScreenHeader';
 
 // Mock data for groups
 const MOCK_GROUPS = [
@@ -43,18 +44,11 @@ const MOCK_GROUPS = [
 export default function GroupsScreen() {
   return (
     <View style={styles.container}>
-      <LinearGradient
-        colors={['#8B5CF6', '#6366F1', '#4F46E5']}
-        style={styles.header}
-      >
-        <View style={styles.headerTitleRow}>
-          <Text style={styles.headerTitle}>Meine Gruppen</Text>
-          
-          <TouchableOpacity style={styles.newGroupButton}>
-            <Ionicons name="add" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
+      <ScreenHeader 
+        title="Meine Gruppen" 
+        rightIcon="add" 
+        onRightIconPress={() => console.log('Add group')}
+      />
       
       <ScrollView style={styles.content}>
         <View style={styles.joinOptionsContainer}>

@@ -17,14 +17,13 @@ const SYSTEM_FONTS = {
   body: Platform.OS === 'ios' ? 'System' : 'Roboto',
 };
 
-// Fonts with fallbacks to system fonts
+// Using only system fonts
 export const FONTS = {
-  heading: 'Mansfield',
-  body: 'Neue Power',
+  heading: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  body: Platform.OS === 'ios' ? 'System' : 'Roboto',
   system: Platform.OS === 'ios' ? 'System' : 'Roboto',
   
-  // Use these when you want to ensure system fonts are used
-  // or when custom fonts might not be loaded yet
+  // For consistency with existing code
   systemHeading: SYSTEM_FONTS.heading,
   systemBody: SYSTEM_FONTS.body,
 };

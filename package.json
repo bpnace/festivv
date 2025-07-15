@@ -9,7 +9,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test-connection": "node test-connection.js",
-    "verify-env": "node verify-supabase-config.js"
+    "verify-env": "node verify-supabase-config.js",
+    "verify-supabase": "node verify-supabase.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -25,7 +26,7 @@
     "expo-camera": "^16.1.10",
     "expo-constants": "^17.1.7",
     "expo-file-system": "^18.1.11",
-    "expo-font": "~11.10.3",
+    "expo-font": "~13.3.2",
     "expo-image-picker": "^16.1.4",
     "expo-linear-gradient": "^14.1.5",
     "expo-linking": "^7.1.7",

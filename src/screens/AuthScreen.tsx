@@ -17,109 +17,102 @@ import { useAuth } from '../hooks/useAuth';
 // Define the possible authentication modes
 type AuthMode = 'login' | 'register' | 'guest';
 
+// Suppress WebCrypto API warning in development
+if (__DEV__) {
+  const originalConsoleWarn = console.warn;
+  console.warn = (...args) => {
+    if (args[0] && typeof args[0] === 'string' && 
+        args[0].includes('WebCrypto API is not supported')) {
+      return;
+    }
+    originalConsoleWarn(...args);
+  };
+}
+
 const AuthScreen = () => {
   // State for form inputs and UI
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [mode, setMode] = useState<AuthMode>('login');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [localLoading, setLocalLoading] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Get authentication functions from the auth hook
-  const { signIn, signUp, continueAsGuest, testConnection } = useAuth();
+  const { signIn, signUp, continueAsGuest, isLoading, error, isAuthenticated } = useAuth();
 
   // Clear messages when changing modes
   useEffect(() => {
-    setError(null);
+    setLocalError(null);
     setSuccessMessage(null);
   }, [mode]);
 
+  // Update local error state when auth error changes
+  useEffect(() => {
+    if (error) {
+      setLocalError(error);
+    }
+  }, [error]);
+
+  // Show success message when authentication succeeds
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (mode === 'login') {
+        setSuccessMessage('Anmeldung erfolgreich!');
+      } else if (mode === 'register') {
+        setSuccessMessage('Registrierung erfolgreich!');
+      } else if (mode === 'guest') {
+        setSuccessMessage('Gast-Zugang erfolgreich!');
+      }
+    }
+  }, [isAuthenticated, mode]);
+
   // Handle form submission based on current mode
   const handleSubmit = async () => {
-    setLoading(true);
-    setError(null);
+    setLocalLoading(true);
+    setLocalError(null);
     setSuccessMessage(null);
     
     try {
-      let result;
-      
       // Perform the appropriate authentication action based on mode
       if (mode === 'login') {
         if (!email || !password) {
           throw new Error('Bitte E-Mail und Passwort eingeben');
         }
         
-        result = await signIn(email, password);
-        
-        if (!result.success && result.error) {
-          throw new Error(result.error);
-        }
-        
-        setSuccessMessage('Anmeldung erfolgreich!');
+        await signIn(email, password);
         
       } else if (mode === 'register') {
         if (!email || !password || !username) {
           throw new Error('Bitte alle Felder ausfüllen');
         }
         
-        result = await signUp(email, password, username);
+        // Call signUp and handle any errors
+        await signUp(email, password, username);
         
-        if (result.success) {
-          if (result.error?.includes('confirmation link')) {
-            setSuccessMessage('Registrierung erfolgreich! Bitte überprüfe deine E-Mail für einen Bestätigungslink.');
-            // Clear form fields after successful registration
-            setEmail('');
-            setPassword('');
-            setUsername('');
-            // Switch to login mode after successful registration
-            setTimeout(() => {
-              setMode('login');
-            }, 2000);
-          } else {
-            setSuccessMessage('Registrierung erfolgreich!');
-          }
-        } else if (result.error) {
-          throw new Error(result.error);
-        }
+        // Show success message immediately after registration
+        setSuccessMessage('Registrierung erfolgreich! Sie werden angemeldet...');
+        
+        // Clear form fields after registration attempt
+        setEmail('');
+        setPassword('');
+        setUsername('');
+        
+        // Switch to login mode after registration
+        setTimeout(() => {
+          setMode('login');
+        }, 2000);
         
       } else if (mode === 'guest') {
-        result = await continueAsGuest();
-        
-        if (!result.success && result.error) {
-          throw new Error(result.error || 'Fehler beim Gast-Login');
-        }
-        
-        setSuccessMessage('Gast-Zugang erfolgreich!');
+        await continueAsGuest();
       }
       
     } catch (err: any) {
-      setError(err.message);
+      setLocalError(err.message);
       console.error('Auth error:', err);
     } finally {
-      setLoading(false);
-    }
-  };
-
-  // Test Supabase connection
-  const handleTestConnection = async () => {
-    setLoading(true);
-    setError(null);
-    setSuccessMessage(null);
-    
-    try {
-      const result = await testConnection();
-      
-      if (result.success) {
-        setSuccessMessage(`Verbindung erfolgreich! URL: ${result.url}`);
-      } else {
-        setError(`Verbindungsfehler: ${result.message}`);
-      }
-    } catch (err: any) {
-      setError(`Unerwarteter Fehler: ${err.message}`);
-    } finally {
-      setLoading(false);
+      setLocalLoading(false);
     }
   };
 
@@ -151,9 +144,9 @@ const AuthScreen = () => {
             </View>
             
             {/* Error message */}
-            {error && (
+            {localError && (
               <View style={styles.messageContainer}>
-                <Text style={styles.errorText}>{error}</Text>
+                <Text style={styles.errorText}>{localError}</Text>
               </View>
             )}
             
@@ -174,7 +167,7 @@ const AuthScreen = () => {
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  editable={!loading}
+                  editable={!isLoading && !localLoading}
                 />
                 <TextInput
                   style={styles.input}
@@ -182,14 +175,14 @@ const AuthScreen = () => {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
-                  editable={!loading}
+                  editable={!isLoading && !localLoading}
                 />
                 
                 {/* Guest access link below login form */}
                 <TouchableOpacity 
                   style={styles.guestLink}
                   onPress={() => setMode('guest')}
-                  disabled={loading}
+                  disabled={isLoading || localLoading}
                 >
                   <Text style={styles.guestLinkText}>Als Gast fortfahren</Text>
                 </TouchableOpacity>
@@ -204,7 +197,7 @@ const AuthScreen = () => {
                   placeholder="Benutzername"
                   value={username}
                   onChangeText={setUsername}
-                  editable={!loading}
+                  editable={!isLoading && !localLoading}
                 />
                 <TextInput
                   style={styles.input}
@@ -213,7 +206,7 @@ const AuthScreen = () => {
                   onChangeText={setEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  editable={!loading}
+                  editable={!isLoading && !localLoading}
                 />
                 <TextInput
                   style={styles.input}
@@ -221,14 +214,14 @@ const AuthScreen = () => {
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
-                  editable={!loading}
+                  editable={!isLoading && !localLoading}
                 />
                 
                 {/* Guest access link below register form */}
                 <TouchableOpacity 
                   style={styles.guestLink}
                   onPress={() => setMode('guest')}
-                  disabled={loading}
+                  disabled={isLoading || localLoading}
                 >
                   <Text style={styles.guestLinkText}>Als Gast fortfahren</Text>
                 </TouchableOpacity>
@@ -251,9 +244,9 @@ const AuthScreen = () => {
             <TouchableOpacity 
               style={styles.button} 
               onPress={handleSubmit}
-              disabled={loading}
+              disabled={isLoading || localLoading}
             >
-              {loading ? (
+              {isLoading || localLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.buttonText}>
@@ -262,14 +255,12 @@ const AuthScreen = () => {
               )}
             </TouchableOpacity>
             
-            {/* Test connection button */}
-            <TouchableOpacity 
-              style={styles.testButton} 
-              onPress={handleTestConnection}
-              disabled={loading}
-            >
-              <Text style={styles.testButtonText}>Verbindung testen</Text>
-            </TouchableOpacity>
+            {/* Connection status */}
+            <View style={styles.connectionStatus}>
+              <Text style={styles.connectionStatusText}>
+                {isAuthenticated ? 'Verbunden ✅' : 'Nicht verbunden'}
+              </Text>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -363,13 +354,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
-  testButton: {
+  connectionStatus: {
     marginTop: 20,
     padding: 10,
     alignItems: 'center',
   },
-  testButtonText: {
-    color: '#6366F1',
+  connectionStatusText: {
+    color: '#666',
   },
   guestLink: {
     marginTop: 10,

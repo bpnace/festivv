@@ -3,7 +3,7 @@ export interface User {
   id: string;
   name: string;
   email?: string;
-  avatar_url?: string;
+  avatar_url?: string | null;
   is_guest: boolean;
   created_at: string;
   updated_at: string;
@@ -20,8 +20,8 @@ export type RootStackParamList = {
 };
 
 export type TabParamList = {
-  Start: undefined;
-  Gallery: undefined;
+  Groups: undefined;
+  Gallery: { newPhotoUri?: string };
   Camera: undefined;
   Friends: undefined;
   Profile: undefined;

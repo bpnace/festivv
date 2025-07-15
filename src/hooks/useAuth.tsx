@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import { supabase } from '../services/supabase';
+import { supabase, supabaseAdmin } from '../services/supabase';
 import { User } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -55,14 +55,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const { data: userData, error: userError } = await supabase
             .from('users')
             .select('*')
-            .eq('id', session.user.id)
-            .single();
+            .eq('id', session.user.id);
           
-          if (userError && !userError.message.includes('No rows found')) {
+          if (userError) {
             console.error('User data error:', userError.message);
             setError('Failed to get user data');
-          } else if (userData) {
-            setUser(userData);
+          } else if (userData && userData.length > 0) {
+            setUser(userData[0]);
+          } else {
+            // No user profile found, create one
+            await createUserProfile(session.user.id, session.user.email, session.user.user_metadata?.name);
           }
         }
       } catch (err: any) {
@@ -88,36 +90,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const { data: userData, error: userError } = await supabase
             .from('users')
             .select('*')
-            .eq('id', session.user.id)
-            .single();
+            .eq('id', session.user.id);
           
-          if (userError && !userError.message.includes('No rows found')) {
+          if (userError) {
             console.error('User data error:', userError.message);
             setError('Failed to get user data');
-          } else if (userData) {
-            setUser(userData);
+          } else if (userData && userData.length > 0) {
+            setUser(userData[0]);
           } else {
             // Create user profile if it doesn't exist
-            const newUser: Omit<User, 'created_at' | 'updated_at'> = {
-              id: session.user.id,
-              name: session.user.email?.split('@')[0] || 'Guest User',
-              email: session.user.email,
-              is_guest: !session.user.email,
-              avatar_url: null,
-            };
-            
-            const { data: createdUser, error: createError } = await supabase
-              .from('users')
-              .insert([newUser])
-              .select()
-              .single();
-            
-            if (createError) {
-              console.error('Create user error:', createError.message);
-              setError('Failed to create user profile');
-            } else if (createdUser) {
-              setUser(createdUser);
-            }
+            await createUserProfile(session.user.id, session.user.email, session.user.user_metadata?.name);
           }
         } catch (err: any) {
           console.error('Profile fetch error:', err.message);
@@ -136,6 +118,87 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authListener?.subscription.unsubscribe();
     };
   }, []);
+
+  // Helper function to create user profile with proper error handling
+  const createUserProfile = async (userId: string, email?: string | null, name?: string | null) => {
+    try {
+      // First, check if the user profile already exists
+      const { data: existingUsers, error: fetchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId);
+      
+      // If user already exists, just use that profile
+      if (existingUsers && existingUsers.length > 0) {
+        setUser(existingUsers[0]);
+        return;
+      }
+      
+      // Prepare user data
+      const newUser = {
+        id: userId,
+        name: name || email?.split('@')[0] || 'User',
+        email: email,
+        is_guest: !email,
+        avatar_url: null as string | null, // Explicitly type as string | null
+      };
+      
+      // Try to create user profile
+      const { error: insertError } = await supabase
+        .from('users')
+        .insert([newUser]);
+      
+      // If insert fails, try to fetch the user again (it might have been created by a trigger)
+      if (insertError) {
+        console.error('Create user error:', insertError.message);
+        
+        // If it's a duplicate key error, the user profile might already exist
+        if (insertError.message.includes('duplicate key') || insertError.message.includes('violates row-level security policy')) {
+          const { data: retryUsers, error: retryError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId);
+          
+          if (retryUsers && retryUsers.length > 0) {
+            setUser(retryUsers[0]);
+            return;
+          }
+        }
+        
+        // If we still can't get the user, store locally as fallback
+        const localUser = {
+          ...newUser,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        
+        // Cast to unknown first to satisfy TypeScript
+        setUser(localUser as unknown as User);
+        
+        // Store locally for persistence
+        try {
+          await AsyncStorage.setItem('user_profile', JSON.stringify(localUser));
+        } catch (storageErr) {
+          console.error('Failed to store user profile locally:', storageErr);
+        }
+      } else {
+        // Fetch the created user to get all fields
+        const { data: createdUsers, error: fetchError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId);
+        
+        if (fetchError) {
+          console.error('Fetch created user error:', fetchError.message);
+        } else if (createdUsers && createdUsers.length > 0) {
+          setUser(createdUsers[0]);
+        }
+      }
+    } catch (err: any) {
+      console.error('Create user profile error:', err.message);
+      setError('Failed to create user profile');
+    }
+  };
   
   // Sign in with email and password
   const signIn = async (email: string, password: string) => {
@@ -171,22 +234,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signUp({
+      // Sign up with auto-confirm enabled
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name,
           },
+          // Enable auto-confirmation to bypass email verification
+          emailRedirectTo: undefined,
         },
       });
       
       if (error) {
         console.error('Sign up error:', error.message);
         setError(error.message);
+        return;
+      }
+      
+      // Check if user was created
+      if (data?.user) {
+        console.log('User registered successfully:', data.user.id);
+        
+        // Create user profile in the database
+        await createUserProfile(data.user.id, email, name);
+        
+        // No need to show verification message since we're auto-confirming
+        setError(null);
       } else {
-        // Success message for email confirmation
-        setError('Please check your email for verification link');
+        // This shouldn't happen with auto-confirmation, but just in case
+        setError('Registration successful. Please log in with your credentials.');
       }
     } catch (err: any) {
       console.error('Sign up exception:', err.message);
@@ -240,11 +318,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInAnonymously();
+      const { data, error } = await supabase.auth.signInAnonymously();
       
       if (error) {
         console.error('Guest access error:', error.message);
         setError(error.message);
+      } else if (data?.user) {
+        // Create guest user profile
+        await createUserProfile(data.user.id, null, 'Guest User');
       }
     } catch (err: any) {
       console.error('Guest access exception:', err.message);

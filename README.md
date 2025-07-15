@@ -12,6 +12,36 @@ A React Native mobile application for festival attendees to capture, share, and 
 - **Gallery**: View and manage photos with filtering options
 - **Friend Finding**: Location-based friend finding at festivals
 - **Offline Support**: Take photos offline and sync later
+- **Photo Viewer**: View photos in full screen with swipe controls and download options
+- **Profile Management**: Edit profile information and avatar
+- **Premium Features**: Subscription model for advanced features
+
+## New Features
+
+### Camera Integration
+- Built-in camera functionality using Expo Camera
+- Photo capture with flash control and camera flip
+- Save photos to device gallery
+- Direct integration with the app's gallery
+
+### Photo Viewer
+- Full-screen photo viewing experience
+- Swipe navigation between photos
+- Download photos to device
+- Share photos with friends
+- Display photo metadata (caption, date)
+
+### Enhanced Profile & Settings
+- Profile image upload and editing
+- Toggle switches for app settings (notifications, location sharing, dark mode)
+- Edit profile information
+- Improved UI with modern design elements
+
+### Premium Features Page
+- Showcase of premium features with visual indicators
+- "Coming soon" badges for upcoming features
+- Subscription options (monthly and yearly)
+- Detailed feature descriptions
 
 ## Screenshots
 
@@ -64,6 +94,16 @@ pnpm install
 
 3. Create a `.env.local` file with your Supabase credentials (see above)
 
+### Required Expo Packages
+
+The app requires the following Expo packages:
+```bash
+expo install expo-camera
+expo install expo-media-library
+expo install expo-file-system
+expo install expo-image-picker
+```
+
 ## Running the App
 
 To start the app:
@@ -89,14 +129,19 @@ node test-connection.js
 - **AuthScreen**: Login, registration, and guest access
 - **GroupsScreen**: List of festival groups with creation and joining options
 - **GalleryScreen**: Photo grid with filtering options and upload functionality
+- **CameraScreen**: Built-in camera for taking photos
 - **FriendsScreen**: Find and manage festival friends with location features
 - **ProfileScreen**: User profile, settings, and account management
+- **PremiumScreen**: Premium features and subscription options
 
 ### Main Components
 - **Navigation**: Tab-based navigation with stack navigation for authentication flow
 - **Authentication**: Supabase authentication with guest access
 - **UI Components**: Modern design with consistent styling across screens
 - **Database Integration**: Secure data storage and retrieval with Row Level Security
+- **CameraComponent**: Reusable camera component with controls
+- **PhotoViewer**: Full-screen photo viewing experience
+- **ScreenHeader**: Consistent header styling across screens
 
 ## Supabase Configuration
 
@@ -127,6 +172,16 @@ The app supports three authentication methods:
 
 Guest access uses Supabase's anonymous authentication. No email verification is required. The application automatically creates user profile records for guest users.
 
+## Premium Features
+
+The app includes a premium subscription model with the following features:
+- Unlimited photo storage
+- Advanced photo filters
+- Priority support
+- Custom themes
+- Album export functionality
+- HD photo uploads
+
 ## Troubleshooting
 
 If you encounter authentication issues:
@@ -136,6 +191,13 @@ If you encounter authentication issues:
 3. Check that the SQL in `simplified-security-fix.sql` has been executed successfully
 4. Run `node test-connection.js` to verify your connection is working
 5. Check the Supabase logs for any specific database errors
+
+### Camera Permissions
+
+If the camera doesn't work:
+1. Make sure you've granted camera permissions to the app
+2. On iOS, check that camera usage is enabled in Settings
+3. On Android, verify that the app has camera permissions in system settings
 
 ### SQL Troubleshooting
 

@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
 
 // Screens
 import StartScreen from '../screens/StartScreen';
@@ -13,6 +13,8 @@ import GroupsScreen from '../screens/GroupsScreen';
 import GalleryScreen from '../screens/GalleryScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import CameraScreen from '../screens/CameraScreen';
+import PremiumScreen from '../screens/PremiumScreen';
 
 // Types
 import { RootStackParamList, TabParamList } from '../types';
@@ -22,13 +24,6 @@ import { COLORS } from '../constants';
 // Create navigators
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
-
-// Camera screen component
-const CameraScreen = () => (
-  <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' }}>
-    <Ionicons name="camera" size={100} color={COLORS.primary} />
-  </View>
-);
 
 // Main tab navigator (when authenticated)
 const MainTabs = () => {
@@ -51,16 +46,26 @@ const MainTabs = () => {
             iconName = focused ? 'person' : 'person-outline';
           }
 
-          return <Ionicons name={iconName as any} size={size} color={color} />;
+          // Make the icon size bigger
+          return <Ionicons name={iconName as any} size={size + 4} color={color} />;
         },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textSecondary,
         tabBarStyle: {
           borderTopWidth: 1,
           borderTopColor: COLORS.border,
-          height: 60,
-          paddingBottom: 10,
-          paddingTop: 5,
+          height: 90, // Increased from 80 to 90
+          paddingBottom: 35, // Increased from 30 to 35
+          paddingTop: 10, // Increased from 5 to 10
+          // Add safe area inset for iOS devices with home indicator
+          ...(Platform.OS === 'ios' && {
+            safeAreaInsets: { bottom: 10 }
+          })
+        },
+        tabBarLabelStyle: {
+          fontSize: 12, // Increased font size
+          fontWeight: '500', // Make the text a bit bolder
+          paddingBottom: 5, // Add some padding at the bottom
         },
       })}
     >
@@ -74,10 +79,10 @@ const MainTabs = () => {
 };
 
 export default function Navigation() {
-  const { user, loading } = useAuth();
+  const { user, isLoading } = useAuth();
 
   // Show loading screen while checking authentication
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
         <ActivityIndicator size="large" color={COLORS.primary} />
@@ -99,8 +104,8 @@ export default function Navigation() {
             />
             <Stack.Screen 
               name="Premium" 
-              component={ProfileScreen} 
-              options={{ headerShown: true, title: 'Premium' }}
+              component={PremiumScreen} 
+              options={{ headerShown: false }}
             />
           </>
         ) : (

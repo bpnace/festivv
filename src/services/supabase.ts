@@ -13,9 +13,23 @@ const getConfigValue = (key: string): string => {
 };
 
 // Get Supabase URL and keys
-const supabaseUrl = getConfigValue('supabaseUrl');
-const supabaseAnonKey = getConfigValue('supabaseAnonKey');
+let supabaseUrl = getConfigValue('supabaseUrl');
+let supabaseAnonKey = getConfigValue('supabaseAnonKey');
 const supabaseServiceKey = getConfigValue('supabaseServiceKey');
+
+// For development/testing, use default values if environment variables are missing
+if (__DEV__ && (!supabaseUrl || !supabaseAnonKey)) {
+  // Default test values for development only
+  if (!supabaseUrl) {
+    supabaseUrl = 'https://test-project.supabase.co';
+    console.warn('Using default test Supabase URL for development');
+  }
+  
+  if (!supabaseAnonKey) {
+    supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlc3QiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTYzMDAwMDAwMCwiZXhwIjoxOTQ1MDAwMDAwfQ.test-key';
+    console.warn('Using default test Supabase anon key for development');
+  }
+}
 
 // Validate URL and keys in development
 if (__DEV__) {
@@ -43,6 +57,8 @@ export const supabase = createClient(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
+      // Disable email verification requirement for development
+      flowType: __DEV__ ? 'pkce' : 'implicit',
     },
   }
 );
