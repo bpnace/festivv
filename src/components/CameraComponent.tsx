@@ -1,30 +1,40 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text, Alert, Platform } from 'react-native';
-import { Camera, CameraType, FlashMode, CameraCapturedPicture } from 'expo-camera';
+import { Camera, CameraType, FlashMode } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, BORDER_RADIUS } from '../constants';
 
 interface CameraComponentProps {
-  onCapture: (photo: CameraCapturedPicture) => void;
+  onCapture: (photo: any) => void;
   onClose: () => void;
 }
 
 export default function CameraComponent({ onCapture, onClose }: CameraComponentProps) {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-  const [cameraType, setCameraType] = useState(CameraType.back);
-  const [flashMode, setFlashMode] = useState(FlashMode.off);
+  const [cameraType, setCameraType] = useState<CameraType>(CameraType?.back || 'back');
+  const [flashMode, setFlashMode] = useState<FlashMode>(FlashMode?.off || 'off');
   const [isCapturing, setIsCapturing] = useState(false);
   const cameraRef = useRef<Camera>(null);
 
   useEffect(() => {
     (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-      
-      if (status !== 'granted') {
+      try {
+        const { status } = await Camera.requestCameraPermissionsAsync();
+        setHasPermission(status === 'granted');
+        
+        if (status !== 'granted') {
+          Alert.alert(
+            'Kamerazugriff erforderlich',
+            'Um Fotos aufzunehmen, benötigt die App Zugriff auf deine Kamera.',
+            [{ text: 'OK' }]
+          );
+        }
+      } catch (error) {
+        console.error('Error requesting camera permission:', error);
+        setHasPermission(false);
         Alert.alert(
-          'Kamerazugriff erforderlich',
-          'Um Fotos aufzunehmen, benötigt die App Zugriff auf deine Kamera.',
+          'Kamerafehler',
+          'Die Kamera konnte nicht initialisiert werden. Bitte starte die App neu.',
           [{ text: 'OK' }]
         );
       }
@@ -52,13 +62,13 @@ export default function CameraComponent({ onCapture, onClose }: CameraComponentP
 
   const toggleCameraType = () => {
     setCameraType(current => 
-      current === CameraType.back ? CameraType.front : CameraType.back
+      current === (CameraType?.back || 'back') ? (CameraType?.front || 'front') : (CameraType?.back || 'back')
     );
   };
 
   const toggleFlashMode = () => {
     setFlashMode(current => 
-      current === FlashMode.off ? FlashMode.on : FlashMode.off
+      current === (FlashMode?.off || 'off') ? (FlashMode?.on || 'on') : (FlashMode?.off || 'off')
     );
   };
 
@@ -107,7 +117,7 @@ export default function CameraComponent({ onCapture, onClose }: CameraComponentP
               onPress={toggleFlashMode}
             >
               <Ionicons 
-                name={flashMode === FlashMode.off ? "flash-off" : "flash"} 
+                name={flashMode === (FlashMode?.off || 'off') ? "flash-off" : "flash"} 
                 size={24} 
                 color="white" 
               />

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   StyleSheet,
@@ -11,6 +11,7 @@ import {
   Platform,
   Share,
   ScrollView,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -38,10 +39,34 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
   const scrollViewRef = useRef<ScrollView>(null);
 
   const currentPhoto = photos[currentIndex];
+
+  // Initialize loading state for all photos
+  useEffect(() => {
+    const initialLoadingState: Record<string, boolean> = {};
+    photos.forEach(photo => {
+      initialLoadingState[photo.id] = true;
+    });
+    setIsLoading(initialLoadingState);
+    
+    // Hide status bar when viewing photos
+    StatusBar.setHidden(true);
+    return () => {
+      // Show status bar when component unmounts
+      StatusBar.setHidden(false);
+    };
+  }, [photos]);
+
+  // Scroll to initial photo
+  useEffect(() => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollTo({ x: initialIndex * width, animated: false });
+    }
+  }, [initialIndex]);
 
   // Handle swipe to next or previous photo
   const handleScroll = (event: any) => {
@@ -50,7 +75,6 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
     
     if (newIndex !== currentIndex && newIndex >= 0 && newIndex < photos.length) {
       setCurrentIndex(newIndex);
-      setImageError(false); // Reset error state when changing photos
     }
   };
 
@@ -71,8 +95,18 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
         return;
       }
       
+      // For remote images, download first
+      let fileUri = currentPhoto.uri;
+      if (currentPhoto.uri.startsWith('http')) {
+        const localUri = FileSystem.documentDirectory + `download-${Date.now()}.jpg`;
+        const downloadResult = await FileSystem.downloadAsync(currentPhoto.uri, localUri);
+        if (downloadResult.status === 200) {
+          fileUri = downloadResult.uri;
+        }
+      }
+      
       // Save to media library
-      await MediaLibrary.saveToLibraryAsync(currentPhoto.uri);
+      await MediaLibrary.saveToLibraryAsync(fileUri);
       
       Alert.alert(
         'Gespeichert',
@@ -93,12 +127,16 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
       // For remote images, we need to download them first
       if (currentPhoto.uri.startsWith('http')) {
         const fileUri = FileSystem.documentDirectory + `temp-${Date.now()}.jpg`;
-        await FileSystem.downloadAsync(currentPhoto.uri, fileUri);
+        const downloadResult = await FileSystem.downloadAsync(currentPhoto.uri, fileUri);
         
-        await Share.share({
-          url: fileUri,
-          message: currentPhoto.caption || 'Sieh dir dieses Festival-Foto an!',
-        });
+        if (downloadResult.status === 200) {
+          await Share.share({
+            url: fileUri,
+            message: currentPhoto.caption || 'Sieh dir dieses Festival-Foto an!',
+          });
+        } else {
+          throw new Error('Failed to download image for sharing');
+        }
       } else {
         // Local file
         await Share.share({
@@ -117,7 +155,6 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
     if (currentIndex < photos.length - 1) {
       const nextIndex = currentIndex + 1;
       setCurrentIndex(nextIndex);
-      setImageError(false); // Reset error state
       scrollViewRef.current?.scrollTo({ x: nextIndex * width, animated: true });
     }
   };
@@ -127,15 +164,20 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
     if (currentIndex > 0) {
       const prevIndex = currentIndex - 1;
       setCurrentIndex(prevIndex);
-      setImageError(false); // Reset error state
       scrollViewRef.current?.scrollTo({ x: prevIndex * width, animated: true });
     }
   };
 
   // Handle image load error
-  const handleImageError = () => {
-    console.log('Image failed to load:', currentPhoto.uri);
-    setImageError(true);
+  const handleImageError = (photoId: string) => {
+    console.log('Image failed to load:', photoId);
+    setImageErrors(prev => ({ ...prev, [photoId]: true }));
+    setIsLoading(prev => ({ ...prev, [photoId]: false }));
+  };
+
+  // Handle image load success
+  const handleImageLoad = (photoId: string) => {
+    setIsLoading(prev => ({ ...prev, [photoId]: false }));
   };
 
   return (
@@ -156,18 +198,35 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
         >
           {photos.map((photo) => (
             <View key={photo.id} style={styles.photoContainer}>
-              {imageError && photo.id === currentPhoto.id ? (
+              {imageErrors[photo.id] ? (
                 <View style={styles.errorContainer}>
                   <Ionicons name="image-outline" size={80} color={COLORS.textTertiary} />
                   <Text style={styles.errorText}>Bild konnte nicht geladen werden</Text>
+                  <TouchableOpacity 
+                    style={styles.retryButton}
+                    onPress={() => {
+                      setImageErrors(prev => ({ ...prev, [photo.id]: false }));
+                      setIsLoading(prev => ({ ...prev, [photo.id]: true }));
+                    }}
+                  >
+                    <Text style={styles.retryButtonText}>Erneut versuchen</Text>
+                  </TouchableOpacity>
                 </View>
               ) : (
-                <Image
-                  source={{ uri: photo.uri }}
-                  style={styles.photo}
-                  resizeMode="contain"
-                  onError={handleImageError}
-                />
+                <>
+                  <Image
+                    source={{ uri: photo.uri }}
+                    style={styles.photo}
+                    resizeMode="contain"
+                    onError={() => handleImageError(photo.id)}
+                    onLoad={() => handleImageLoad(photo.id)}
+                  />
+                  {isLoading[photo.id] && (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="large" color={COLORS.primary} />
+                    </View>
+                  )}
+                </>
               )}
             </View>
           ))}
@@ -207,19 +266,28 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
               <TouchableOpacity
                 style={styles.controlButton}
                 onPress={handleShare}
+                disabled={imageErrors[currentPhoto.id]}
               >
-                <Ionicons name="share-outline" size={24} color="white" />
+                <Ionicons 
+                  name="share-outline" 
+                  size={24} 
+                  color={imageErrors[currentPhoto.id] ? COLORS.textTertiary : "white"} 
+                />
               </TouchableOpacity>
               
               <TouchableOpacity
                 style={styles.controlButton}
                 onPress={handleDownload}
-                disabled={isDownloading}
+                disabled={isDownloading || imageErrors[currentPhoto.id]}
               >
                 {isDownloading ? (
                   <ActivityIndicator color="white" size="small" />
                 ) : (
-                  <Ionicons name="download-outline" size={24} color="white" />
+                  <Ionicons 
+                    name="download-outline" 
+                    size={24} 
+                    color={imageErrors[currentPhoto.id] ? COLORS.textTertiary : "white"} 
+                  />
                 )}
               </TouchableOpacity>
             </View>
@@ -251,8 +319,9 @@ export default function PhotoViewer({ photos, initialIndex, onClose }: PhotoView
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'black',
+    zIndex: 999,
   },
   fullscreenOverlay: {
     flex: 1,
@@ -267,6 +336,12 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  loadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -276,6 +351,17 @@ const styles = StyleSheet.create({
     color: COLORS.textTertiary,
     marginTop: SPACING.base,
     fontSize: TEXT_SIZES.base,
+  },
+  retryButton: {
+    marginTop: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.lg,
+    backgroundColor: COLORS.primary,
+    borderRadius: BORDER_RADIUS.full,
+  },
+  retryButtonText: {
+    color: 'white',
+    fontWeight: '600',
   },
   header: {
     position: 'absolute',
@@ -288,6 +374,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
     paddingHorizontal: SPACING.lg,
+    zIndex: 10,
   },
   closeButton: {
     width: 40,
@@ -310,6 +397,7 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 40 : 20,
     paddingTop: 50,
     paddingHorizontal: SPACING.lg,
+    zIndex: 10,
   },
   caption: {
     color: 'white',
@@ -345,6 +433,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: -25,
+    zIndex: 10,
   },
   leftNavButton: {
     left: SPACING.base,

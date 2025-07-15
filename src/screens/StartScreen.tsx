@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,6 +8,9 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 
 type StartScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Start'>;
+
+const { width, height } = Dimensions.get('window');
+const HEADER_HEIGHT = height * 0.3; // Consistent header height
 
 const PURPLE_GRADIENT = {
   start: '#8B5CF6',
@@ -42,7 +45,7 @@ export default function StartScreen() {
               <Ionicons name="people" size={24} color="white" />
             </View>
             <Text style={styles.featureTitle}>Gruppen</Text>
-            <Text style={styles.featureDesc}>Erstelle und verwalte deine Festivalgruppen</Text>
+            <Text style={styles.featureDesc}>Festivalgruppen verwalten</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.featureCard}>
@@ -50,7 +53,7 @@ export default function StartScreen() {
               <Ionicons name="images" size={24} color="white" />
             </View>
             <Text style={styles.featureTitle}>Galerie</Text>
-            <Text style={styles.featureDesc}>Alle Fotos deiner Gruppe an einem Ort</Text>
+            <Text style={styles.featureDesc}>Gruppenfotos anzeigen</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.featureCard}>
@@ -58,7 +61,7 @@ export default function StartScreen() {
               <Ionicons name="camera" size={24} color="white" />
             </View>
             <Text style={styles.featureTitle}>Kamera</Text>
-            <Text style={styles.featureDesc}>Nimm Fotos auf und teile sie sofort</Text>
+            <Text style={styles.featureDesc}>Fotos aufnehmen & teilen</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.featureCard}>
@@ -66,14 +69,12 @@ export default function StartScreen() {
               <Ionicons name="location" size={24} color="white" />
             </View>
             <Text style={styles.featureTitle}>Freunde</Text>
-            <Text style={styles.featureDesc}>Finde und treffe deine Festival-Freunde</Text>
+            <Text style={styles.featureDesc}>Freunde finden</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.getStartedContainer}>
-        <Text style={styles.sectionTitle}>Los geht's!</Text>
-        
+      <View style={styles.actionContainer}>        
         <TouchableOpacity 
           style={styles.getStartedButton}
           onPress={() => navigation.navigate('Auth')}
@@ -122,34 +123,36 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    paddingTop: SPACING.xxxl + SPACING.lg,
-    paddingBottom: SPACING.xxl,
+    height: HEADER_HEIGHT,
+    paddingTop: SPACING.xl,
+    paddingBottom: SPACING.lg,
     borderBottomLeftRadius: 30,
     borderBottomRightRadius: 30,
+    justifyContent: 'center',
   },
   headerContent: {
     paddingHorizontal: SPACING.lg,
     alignItems: 'center',
   },
   appName: {
-    fontSize: 42,
+    fontSize: 48,
     fontWeight: 'bold',
     color: 'white',
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   tagline: {
     fontSize: TEXT_SIZES.lg,
     color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: SPACING.lg,
   },
   featuresContainer: {
     padding: SPACING.lg,
+    marginTop: SPACING.base,
   },
   sectionTitle: {
     fontSize: TEXT_SIZES.xl,
     fontWeight: 'bold',
     color: COLORS.text,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.base,
   },
   featureGrid: {
     flexDirection: 'row',
@@ -160,34 +163,35 @@ const styles = StyleSheet.create({
     width: '48%',
     backgroundColor: COLORS.surface,
     borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
+    padding: SPACING.base,
     marginBottom: SPACING.base,
-    elevation: 2,
+    elevation: 1,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 2,
   },
   iconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: SPACING.base,
+    marginBottom: SPACING.xs,
   },
   featureTitle: {
-    fontSize: TEXT_SIZES.lg,
+    fontSize: TEXT_SIZES.base,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: SPACING.xs,
   },
   featureDesc: {
-    fontSize: TEXT_SIZES.sm,
+    fontSize: TEXT_SIZES.xs,
     color: COLORS.textSecondary,
   },
-  getStartedContainer: {
+  actionContainer: {
     padding: SPACING.lg,
+    paddingTop: 0,
   },
   getStartedButton: {
     marginBottom: SPACING.base,
@@ -198,7 +202,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: BORDER_RADIUS.full,
     paddingVertical: SPACING.base,
-    paddingHorizontal: SPACING.xl,
   },
   getStartedText: {
     color: 'white',
@@ -209,7 +212,7 @@ const styles = StyleSheet.create({
   guestButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: SPACING.base,
+    paddingVertical: SPACING.xs,
   },
   guestButtonText: {
     color: COLORS.primary,
@@ -218,6 +221,7 @@ const styles = StyleSheet.create({
   },
   premiumBanner: {
     margin: SPACING.lg,
+    marginTop: 0,
     borderRadius: BORDER_RADIUS.lg,
     overflow: 'hidden',
     marginBottom: SPACING.xxxl,
@@ -228,7 +232,7 @@ const styles = StyleSheet.create({
   premiumContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: SPACING.lg,
+    padding: SPACING.base,
   },
   premiumTextContainer: {
     flex: 1,
