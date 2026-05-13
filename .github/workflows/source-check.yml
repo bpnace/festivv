@@ -1,0 +1,44 @@
+name: Source Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  source-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+      - name: Check tracked secret files
+        run: |
+          set -euo pipefail
+          matches="$(git ls-files | grep -E '(^|/)(\.env($|\.)|.*\.pem$|.*\.key$|GoogleService-Info\.plist$|Secrets\.plist$)' | grep -v -E '(^|/)\.env\.example$' || true)"
+          if [ -n "$matches" ]; then
+            echo "$matches"
+            exit 1
+          fi
