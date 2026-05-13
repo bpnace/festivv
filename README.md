@@ -29,13 +29,17 @@ A React Native mobile application for festival attendees to capture, share, and 
 
 ### Environment Variables
 
-The app requires Supabase credentials to function properly. These should be stored in a `.env.local` file in the project root:
+The app requires Supabase credentials to function properly. Copy `.env.example`
+to `.env.local` and fill in your local values:
 
 ```
 # Supabase Configuration
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_KEY=your_supabase_service_key
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Local-only admin checks. Do not commit a real service role key.
+SUPABASE_SERVICE_KEY=
+ALLOW_SUPABASE_ADMIN_TEST=0
 
 # App Configuration
 APP_ENV=development
@@ -43,9 +47,9 @@ DEBUG_MODE=true
 ```
 
 Where to find these keys:
-- **SUPABASE_URL**: Your Supabase project URL (e.g., `https://abcdefghijklm.supabase.co`)
-- **SUPABASE_ANON_KEY**: Found in Supabase Dashboard → Project Settings → API → Project API keys → `anon` `public` key
-- **SUPABASE_SERVICE_KEY**: Found in Supabase Dashboard → Project Settings → API → Project API keys → `service_role` key (keep this secure!)
+- **EXPO_PUBLIC_SUPABASE_URL**: Your Supabase project URL.
+- **EXPO_PUBLIC_SUPABASE_ANON_KEY**: Found in Supabase Dashboard -> Project Settings -> API -> Project API keys -> `anon` `public` key.
+- **SUPABASE_SERVICE_KEY**: Optional local-only service role key for admin checks. Keep this out of Git.
 
 ### Installation
 
@@ -62,7 +66,7 @@ npm install
 pnpm install
 ```
 
-3. Create a `.env.local` file with your Supabase credentials (see above)
+3. Copy `.env.example` to `.env.local` and add your local Supabase values.
 
 ## Running the App
 
@@ -150,4 +154,4 @@ The source code is available on GitHub: [https://github.com/bpnace/festivv](http
 
 ## License
 
-MIT 
+MIT
