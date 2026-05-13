@@ -24,7 +24,7 @@ A React Native mobile application for festival attendees to capture, share, and 
 ### Prerequisites
 
 - Node.js (v16 or higher)
-- npm or pnpm
+- npm
 - Expo CLI (`npm install -g expo-cli`)
 
 ### Environment Variables
@@ -62,8 +62,6 @@ cd festivv
 2. Install dependencies:
 ```bash
 npm install
-# or
-pnpm install
 ```
 
 3. Copy `.env.example` to `.env.local` and add your local Supabase values.
